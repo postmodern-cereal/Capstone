@@ -1,9 +1,46 @@
 import numpy as np
 from heapq import *
-
+import random
+from Bot import Bot
 class World:
+	#contains the agent object
 	def __init__(self, size):
+		#initialize everything the world needs to do its thing
 		self.grid = np.empty((size, size), dtype = object)
+		self.size = size
+		#get the agent set up
+		self.place_agent()
+		print ("{} {}".format(self.agentx, self.agenty))
+		self.offsetx = self.get_agentx					#offsets are used to calculate relative positions
+		self.offsety = self.get_agenty
+		self.agent = Bot(self.agentx, self.agenty, self.size, self)
+
+	def get_agentx(self):
+		return self.agentx
+
+	def get_agenty(self):
+		return self.agenty
+
+	def place_agent(self):
+		#a simple loop that gives the agent an initial position
+		#repeatedly choose random x and y coords and test them until you get something that works
+		random.seed
+		x = random.randint(0, self.size)
+		y = random.randint(0, self.size)
+		while(not self.is_available((x, y))):
+			x = random.randint(0, self.size)
+			y = random.randint(0, self.size)
+
+		print("{} {}".format(x, y))
+		self.agentx = x
+		self.agenty = y
+
+	def is_available(self, node):
+		#tests if the coordinates in node are available for occupation
+		if(self.grid[node[0]][node[1]] != "#"):
+			return True
+		else:
+			return False
 
 	def get_neighbors(self, node):
 		#node is an ordered pair
@@ -23,10 +60,6 @@ class World:
 		if(y != len(self.grid) - 1 and self.grid[x][y + 1] != "#"):
 			neighbors.append((x, y + 1))
 		return neighbors
-
-	def cost(self, current, neighbor):
-		#currently just a place holder because all moves are the same cost, but i'll need this later if i implement difficult terrain
-		return 1
 
 	def fill_grid(self, fileName):
 		#takes input from a file and interprets it as world data
@@ -110,6 +143,37 @@ class World:
 				else:
 					print(self.grid[i][j] + " ", end = "")
 			print()
+
+	def get_sensor_data(self, recurse):
+		#get the agent its sensor data
+		#the agent represents the world as a dictionary, so it must get its
+		#world data in a a way that is easy to store in it
+		#thus give it an array of nodes and neighbors
+		#node coordinates will be given based on agent's initial position
+		#sensor range is 2 squares in all directions
+
+
+		#first, build data for agent's immediate neighbors
+		rel_pos = self.get_rel_pos(self.agentx, self.agenty)			#relative position of agent
+		#now find what lives in the current node
+		node_type = self.grid[self.agentx][self.agenty]
+		neighbors = self.get_neighbors(self.get_agentx, self.get_agenty)
+		rel_neighbors = list(neighbors)			#relative positions of neighbors
+		#now convert neighbors to relative positions
+		for i in range (0, len(neighbors)):
+			rel_neighbors[i] = self.get_rel_pos(neighbors[i][0], neighbors[i][1])
+		#now add this data to the agent's memory
+		self.agent.add_data(rel_pos, node_type, rel_neighbors)
+		#now do the same thing with the neighbors of the current node
+		#using cheap recursion
+		if(recurse):
+			for neighbor in neighbors:
+				self.get_sensor_data(neighbor, false)
+
+	def get_rel_pos(self, x, y):
+		#gets position of coordinates relative to agent's start position
+		#enables working with the agent's memory, which never knows its actual start positon
+		return (x-self.offsetx, y-self.offsety)
 
 a = World(20)
 a.fill_grid("bar.txt")
