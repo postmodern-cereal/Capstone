@@ -1,0 +1,49 @@
+\documentclass[12pt]{article}
+
+%% Language and font encodings
+\usepackage[english]{babel}
+\usepackage[utf8x]{inputenc}
+\usepackage[T1]{fontenc}
+
+%% Sets page size and margins
+\usepackage[a4paper,top=3cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+
+%% Useful packages
+
+
+\title{Judgment and Curiocity Centered Artificial expLorer (JACCAl)}
+\author{Noah Ransom}
+\date{December 15, 2017}
+
+\begin{document}
+\maketitle
+\pagebreak
+\section{Introduction}
+Modern AI research has provided software and hardware capable of emulating some of the functions of its creators, such as image and language recognition, simple reasoning, and planning. Solutions to these subproblems already see widespread use in applications ranging from Google search to medical diagnosis to autonomous exploration. In recent years, promising research has been conducted into creating machines that are able to perform their tasks without human interaction. NASA’s Spirit and Opportunity rovers, for example, are able to create routes to their destinations without direct instruction. More recently, researchers at the University of Bristol have created an artificial stomach with which an aquatic robot can gather biomass to sustain itself. 
+
+Revolutionary and useful though such projects are, they are centered on creating a machine that displays autonomy to varying degrees, rather than on focusing on the specifics of their behavior. This focus deprives the field of potentially interesting data about the sorts of behavior that would allow a robot or agent to be fully and indefinitely self sufficient. This project therefore, aims to quantify how much an agent must know about its world, and how careful it must be in order to survive indefinitely, while providing a graphical representation of the agent’s exploration.
+
+To that end, the author has designed an artificial world which contains various resources in limited quantities and a series of agents to explore it. Each agent varies in its level of knowledge about the world (for example, that food may more readily be found near sources of water), and its likelihood to leave a collection of resources in search of more. By varying the tendency to explore, it is possible to quantify how “curious” the agent can be without compromising its own safety, and by varying its level of world knowledge, it is possible to determine the value of detailed knowledge.
+
+Each agent was simulated several times, and data was collected regarding how long it survived and how much area it explored. During the simulation, a graphical display was provided to more easily make qualitative observations about the behavior of each agent.
+
+\pagebreak
+\section{Related Works}
+\subsection{Modeling Risk Sensitvity}
+John McNamara et al performed a series of experiments in the early 1990s to determine when risk averse and risk prone behavior are most beneficial to a foraging organism\cite{mcnamara}. Similar to this project, their work quantifies how risk can change an organism’s chances of extended survival. It involves extensive use of mathematical formulae, allowing them to create a highly complex and detailed model. This theoretical focus allows the team to draw much more specific conclusions than are possible using the simplified circumstances in this project; by removing complexity, general conclusions can be reached without complex mathematics. In particular, McNamara et al modeled an organism that will reproduce under certain circumstances. Since the agents in this project are modeled after robotic entities, the author has ignored the reproduction aspect. In addition, the agent's decision making processes have been simplified: rather than changing the curiosity threshold constantly based on external factors, it has been fine tuned to a value that works reasonably well in all situations.
+
+
+\section{Procedural Terrain Generation}
+Since some of the agents use world knowledge to make decisions about where to explore and to make informed guesses about locations of food and water resources, it is necessary to design the world in a way that can be easily quantified by logical expressions. At the same time, it is essential that an element of stochasticity be present to ensure that the agents’ knowledge bases cannot be specifically tailored to one world layout. Lawrence Johnson et. al. use a cellular automata-based approach to create infinite worlds in real time \cite{johnson}. Using this algorithm, they are able to generate caves that have a reasonably organic appearance. Unlike in this project, theirs makes no concessions to placement of resources to be utilized by agents. Also unlike this project, terrain generation is the sole focus of their work. This means that the cave levels they produce are much more realistic. Despite this difference, the results of this project can still have some bearing on the physical world; each agent should ideally be able to survive in any environment that contains sufficient food resources, regardless of the geography of its surroundings. As a consequence of the information discussed above, this project makes use of hand-generated levels created by the author.
+
+
+\section{Robotic Exploration}
+The concept for this project is heavily inspired by robotic exploration projects conducted by NASA's Jet Propulsion Laboratory. Of particular relevance are a series of robots created by Erann Gat et al\cite{gat}. These robots, similar to the agents in this project, use behavioral control mechanisms to achieve their goals. Unlike the JACCAl agents, however, these robots are given specific goal destinations and objectives to achieve. For this reason, they must contain a slightly different set of behavioral modifiers than those in this project. Also unlike JACCAl agents, the physical robots are forced to make their decisions quickly, as time passes while they deliberate. By removing the time constraint around decisions, the author has been more readily able to consider options. While this does give the agents an advantage over physical robots, the advantage should be fairly minor, considering the limited number of options being considered at any one time.
+
+
+
+\pagebreak
+\nocite{*}
+\bibliographystyle{ieeetr}
+\bibliography{refs}{}
+\end{document}
