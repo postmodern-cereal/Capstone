@@ -14,7 +14,7 @@ class World_2:
 		#agent direction indicated by a single character and are relative to top of screen:
 			#u= up, d = down, l = left, r = right
 		self.agentdir = "u"
-		
+
 		self.agent = Bot_2(self.rows, self.cols, self)
 
 	def get_agentx(self):
@@ -31,10 +31,10 @@ class World_2:
 
 	def get_agentdir(self):
 		return self.agentdir
-		
+
 	def set_agentdir(self, dir):
 		self.agentdir = dir
-		
+
 	def is_obstacle(self, x, y):
 		#returns true iff there is an obstacle at (x, y)
 		return (self.grid[x][y] == "#")
@@ -130,8 +130,8 @@ class World_2:
 
 	#cast 1 left, 1 right
 	#stop when hit obstacle
-	
-		
+
+
 	def cast_boundary_rays(self):
 		#find start and end points for the left and right boundary rays
 		#used to establish an absolute field of view, within which the bot can see
@@ -145,13 +145,13 @@ class World_2:
 					break
 				rightx -= 1
 				righty += 1
-			
+
 			while (leftx >= 0) and (lefty >= 0):
 				if grid[leftx][lefty] == "#":
 					break
 				leftx -= 1
 				lefty -= 1
-				
+
 		elif self.get_agentdir = "d":
 		#agent facing down, so get the proper endpoints
 			while (rightx < self.rows) and (righty >= 0):
@@ -159,16 +159,52 @@ class World_2:
 					break
 				rightx += 1
 				righty -= 1
-			
+
 			while (leftx < self.rows) and (lefty < self.cols):
 				if self.is_obstacle(leftx, lefty):
 					break
 				leftx += 1
 				lefty += 1
-		
-				
-		
-		
+
+		elif self.get_agentdir = "l":
+		#agent facing left, so get the proper endpoints
+			while (rightx >= 0) and (righty >= 0):
+				if self.is_obstacle(rightx, righty):
+					break
+				rightx -= 1
+				righty -= 1
+
+			while (leftx < self.rows) and (lefty >= 0):
+				if self.is_obstacle(leftx, lefty):
+					break
+				leftx += 1
+				lefty -= 1
+
+		elif self.get_agentdir = "r":
+		#agent facing right, so get the proper endpoints
+			while (rightx < self.rows) and (righty < self.cols):
+				if self.is_obstacle(rightx, righty):
+					break
+				rightx += 1
+				righty += 1
+
+			while (leftx >= 0) and (lefty < self.rows):
+				if self.is_obstacle(leftx, lefty):
+					break
+				leftx -= 1
+				lefty += 1
+
+		else:
+			#in theory, this should never be reached, but it never hurts to be careful
+			print('Invalid direction')
+
+		return((leftx, lefty), (rightx, righty))
+
+
+
+
+
+
 
 world = World_2(8, 19)
 print("Agent location:", world.agentx, ", ", world.agenty)
