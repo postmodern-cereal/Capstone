@@ -11,7 +11,10 @@ class World_2:
 		self.cols = cols
 		self.grid = np.empty((rows, cols), dtype = object)
 		(self.agentx, self.agenty) = self.fill_grid("Building.txt")
-
+		#agent direction indicated by a single character and are relative to top of screen:
+			#u= up, d = down, l = left, r = right
+		self.agentdir = "u"
+		
 		self.agent = Bot_2(self.rows, self.cols, self)
 
 	def get_agentx(self):
@@ -26,6 +29,12 @@ class World_2:
 	def set_agenty(self, yidx):
 		self.agenty = yidx
 
+	def get_agentdir(self):
+		return self.agentdir
+		
+	def set_agentdir(self, dir):
+		self.agentdir = dir
+		
 	def is_obstacle(self, x, y):
 		#returns true iff there is an obstacle at (x, y)
 		return (self.grid[x][y] == "#")
@@ -119,10 +128,47 @@ class World_2:
 		self.agent.add_data(data)
 
 
-	def get_rel_pos(self, x, y):
-		#gets position of coordinates relative to agent's start position
-		#enables working with the agent's memory, which never knows its actual start positon
-		return (x-self.offsetx, y-self.offsety)
+	#cast 1 left, 1 right
+	#stop when hit obstacle
+	
+		
+	def cast_boundary_rays(self):
+		#find start and end points for the left and right boundary rays
+		#used to establish an absolute field of view, within which the bot can see
+		#establish start points for right and left boundary rays
+		(leftx, lefty) = (self.get_agentx, self.get_agenty)
+		(rightx, righty) = (self.get_agentx, self.get_agenty)
+		if self.get_agentdir == "u":
+			#right ray found by starting at agent then moving upward with a slope of 1
+			while (rightx >= 0) and (righty < self.cols):
+				if grid[rightx][righty] == "#":
+					break
+				rightx -= 1
+				righty += 1
+			
+			while (leftx >= 0) and (lefty >= 0):
+				if grid[leftx][lefty] == "#":
+					break
+				leftx -= 1
+				lefty -= 1
+				
+		elif self.get_agentdir = "d":
+		#agent facing down, so get the proper endpoints
+			while (rightx < self.rows) and (righty >= 0):
+				if self.is_obstacle(rightx, righty):
+					break
+				rightx += 1
+				righty -= 1
+			
+			while (leftx < self.rows) and (lefty < self.cols):
+				if self.is_obstacle(leftx, lefty):
+					break
+				leftx += 1
+				lefty += 1
+		
+				
+		
+		
 
 world = World_2(8, 19)
 print("Agent location:", world.agentx, ", ", world.agenty)

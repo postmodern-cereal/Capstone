@@ -9,7 +9,8 @@ class Bot_2:
 		#it would make sense to give it the basic building layout
 
 		#example is 8 lines by 19 chars
-		self.grid = np.empty((rows, cols), dtype=object)
+		self.working_memory = np.empty((rows, cols), dtype=object)
+		self.reference_memory = np.empty((rows, cols), dtype=object)
 		(self.xpos, self.ypos) = self.get_floorplan("Building_Bot.txt")
 		self.world = world
 
@@ -26,7 +27,7 @@ class Bot_2:
 		ypos = 0
 		for letter in raw:
 			if (letter != '\n'):
-				self.grid[xidx][yidx] = letter
+				self.working_memory[xidx][yidx] = letter
 				yidx+=1
 			elif letter == 'A':
 				xpos = xidx
@@ -39,7 +40,7 @@ class Bot_2:
 	def display_map(self):
 		for i in range (0, self.rows):
 			for j in range (0, self.cols):
-				print(self.grid[i][j], end='')
+				print(self.working_memory[i][j], end='')
 			print()
 
 	def sense(self):
