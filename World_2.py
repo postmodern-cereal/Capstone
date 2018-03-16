@@ -200,6 +200,63 @@ class World_2:
 
 		return((leftx, lefty), (rightx, righty))
 
+	def extend_ray(self, start, end):
+		#used to trace helper arrays to their endpoints
+
+		#calculate slope frome endpoints
+		slope = ((end[1] - start[1])/(end[0] - start[0]))
+
+		#now extend the line until either you reach an obstacle or go out of bounds
+		nextx = end[0]
+		nexty = end[1]
+		while (nextx >= 0) and (nextx < self.cols) and (nexty >= 0) and (nexty < self.rows):
+			#calculate next x, y
+			nexty += slope
+			nextx = start[0] + ((nexty - start[1])/slope)
+			#make sure next point not obstacle
+
+			#TODO: test this segment for out of bounds errors
+			if self.is_obstacle(nextx, nexty):
+				break
+
+		return (nextx, nexty)
+
+
+	def sense(self):
+		#a main/control method used to call all necessary subroutines
+		#executing this method will provide the agent with a full set of sensor information
+
+		#first, we have to find the outer edges of the agent's field of view
+		(leftEdge, rightEdge) = self.cast_boundary_rays()
+		leftPath = list(bresenham(self.agentx, self.agenty, leftEdge[0], leftEdge[1]))
+		rightPath = list(bresenham(self.agentx, self.agenty, rightEdge[0], rightEdge[1]))
+
+		#now that the paths have been created, we must trace between cooresponding points on each line
+		#since the FOV is bounded by two lines with a slope of 1, we can guarantee that there will
+		#be exactly one point in the bounding line on either side of the FOV
+
+		while True:
+			#loop to manually stop when all characters on frontier are obstacles
+
+			#pop x and y coords from left and right paths
+			left = leftpath.pop(0)
+			right = foo.pop(0)
+
+			#if bot facing u or d, left and right will have same x
+			#if bot facing l or r, left and right will have same y
+			if self.get_agentdir == "u":
+				#facing up, so all points in same row: all have same x, diff y
+				#go from l to r
+				for y in range(left[1], (right[1] + 1)):
+					#add it if it's not an obstacle
+					#if obstacle, need to check if ne
+
+
+			elif (self.get_agentdir == "l") or (self.get_agentdir == "r"):
+
+			else:
+				#should REALLY never happen
+				print("Invalid direction")
 
 
 
