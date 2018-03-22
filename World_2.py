@@ -12,11 +12,12 @@ class World_2:
 		self.grid = np.empty((rows, cols), dtype = object)
 		(self.agentx, self.agenty) = self.fill_grid("Building.txt")
 		#agent direction indicated by a single character and are relative to top of screen:
-			#u= up, d = down, l = left, r = right
+			#u= up(toward top of screen), d = down(bottom of screen), l = left of screen, r = right of screen
 		self.agentdir = "u"
 
 		self.agent = Bot_2(self.rows, self.cols, self)
 
+		
 	def get_agentx(self):
 		return self.agentx
 
@@ -39,6 +40,11 @@ class World_2:
 		#returns true iff there is an obstacle at (x, y)
 		return (self.grid[x][y] == "#")
 
+	def get_distance(start, end):
+		#return distance between start and end
+		#both arguments are ordered pairs
+		return (abs(start[0] - end[0]) + abs(start[1] - end[1]))
+	
 	def fill_grid(self, fileName):
 		#takes input from a file and interprets it as world data
 		fo = open(fileName, "r")
@@ -221,10 +227,14 @@ class World_2:
 
 		return (nextx, nexty)
 
-
+	def getting_farther(self, current, previous):
+		#returns true iff current farther from agent than previous
+		return (get_distance(current, (agentx, agenty)) > get_distance(previous, (agentx, agenty)))
+		
+		
 	def sense(self):
 		#a main/control method used to call all necessary subroutines
-		#executing this method will provide the agent with a full set of sensor information
+		#executing this method will provide the agent with a full set of sensor information in direction agent facing
 
 		#first, we have to find the outer edges of the agent's field of view
 		(leftEdge, rightEdge) = self.cast_boundary_rays()
@@ -235,21 +245,60 @@ class World_2:
 		#since the FOV is bounded by two lines with a slope of 1, we can guarantee that there will
 		#be exactly one point in the bounding line on either side of the FOV
 
-		while True:
+		keepScanning = 1	#used in loop, set to 0 at start, only set to 1 if at least 1 non obstacle found
+		pathIndex = 0		#used to access the elements in the paths, incremented in the loop
+		while keepScanning == 1:
+			keepScanning = 0
 			#loop to manually stop when all characters on frontier are obstacles
 
 			#pop x and y coords from left and right paths
-			left = leftpath.pop(0)
-			right = foo.pop(0)
-
-			#if bot facing u or d, left and right will have same x
-			#if bot facing l or r, left and right will have same y
+			#if one of the paths is out of nodes, use the last one in the path
+			#if both out of nodes, search is done from this angle
+			if len(leftPath) > pathIndex:
+				#have not reached end of left path
+				left = leftPath.pop(pathIndex)
+				
+				#TODO: adjust the point to have correct x (or y) based on direction
+					#if facing U, keep y, and subtract difference of len(leftpath) and pathIndex from x
+			else:
+				#path exhausted, so use last point in path as boundary
+				left = leftPath.pop()
+				#now ensure that right path still has nodes left
+				if len(rightPath) <= pathIndex:
+					#both paths exhausted, end scan
+					break
+					
+			if len(rightPath) > pathIndex:
+				#have not reached end of right path
+				right = rightPath.pop(pathIndex)
+			else:
+				right = rightPath.pop()
+			pathIndex += 1
+			
 			if self.get_agentdir == "u":
 				#facing up, so all points in same row: all have same x, diff y
 				#go from l to r
 				for y in range(left[1], (right[1] + 1)):
 					#add it if it's not an obstacle
-					#if obstacle, need to check if ne
+					#if obstacle, need to check if at boundary
+					if self.is_obstacle(left[0], y):
+						#if at either edge, can ignore
+						if (not y == left[1]) and (not y == right[1]):
+							#the current cell is not at the edge of the FOV
+							if not self.is_obstacle(left[0], (y + 1)):
+								#the current cell marks the right corner of a wall
+								if self.getting_farther((left[0],y), (left[0], (y - 1))):
+									#current cell further than previous, so need helper ray
+								
+								#now log the presence of the obstacle, if it's visible
+								
+							elif not self.is_obstacle(left[0], (y - 1)):
+								#current cell is next to left corner of a wall
+								#if current is farther from agent than next block, generate a helper ray
+						
+					elif not self.is_obstructed(left[0], y):
+						#found a visible non-obstacle, so must keep scanning
+						keepScanning = 1
 
 
 			elif (self.get_agentdir == "l") or (self.get_agentdir == "r"):
