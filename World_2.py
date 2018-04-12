@@ -33,6 +33,17 @@ class World_2:
 	def get_agentdir(self):
 		return self.agentdir
 
+	def rotate(self):
+		#rotates agent clockwise. this is arbitrary and doesn't effect anythign in a major way
+		if self.agentdir == "u":
+			self.set_agentdir("r")
+		elif self.agentdir == "r":
+			self.set_agentdir("d")
+		elif self.agentdir == "d":
+			self.set_agentdir("l")
+		else:
+			self.set_agentdir("u")
+
 	def set_agentdir(self, dir):
 		self.agentdir = dir
 
@@ -609,8 +620,28 @@ class World_2:
 
 		return sensorData
 
-
-
+	def simulate(self, numSweeps):
+		#basic main loop method that runs the simulations
+		#numSweeps is how many total sweeps of building agent should make
+		while numSweeps > 0:
+			nextAction = self.agent.get_next_action()
+			if next_action == "s":
+				for i in range (0, 3):
+					self.agent.add_data(self.sense_init())
+					self.rotate()
+			elif next_action == "n":
+				#verify complete
+				self.agent.reset()
+			elif next_action == "m":
+				#get next move
+				#check next move valid
+				#make next move if valid
+				#if next move invalid:
+					#add time consumed by the following
+					#clear path
+					#clear destination
+					#set agent next move to sense
+					#end timer
 
 #need to test world functionality
 

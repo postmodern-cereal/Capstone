@@ -11,8 +11,9 @@ class Bot_2:
 		#action codes tell world what agent wants to do next
 		#s = sense
 		#m = move
-		#r = rotate
-		self.currentDestination = ()    #where agent wants to go next
+		#c = check for unseen
+		#n = done, ready to start new sweep
+		self.destination = ()    #where agent wants to go next
 		self.currentPath = []           #path to destination
 
 
@@ -20,6 +21,24 @@ class Bot_2:
 		self.working_memory = np.empty((rows, cols), dtype=object)
 		self.reference_memory = initial_memory
 		(self.xpos, self.ypos) = self.get_position()
+
+	def set_xpos(self, x):
+		self.xpos = x
+
+	def set_ypos(self, y):
+		self.ypos = y
+
+	def reset(self):
+		#resets agent for another sweep
+		#set working mem as ref mem
+		#set next action as s
+		#reset prev action, destination, path
+		self.reference_memory = self.working_memory
+		self.working_memory = np.empty((self.rows, self.cols), dtype=object)
+		self.previous_action = ""
+		self.next_action = "s"
+		self.destination = ()
+		self.currentPath = []
 
 	def get_position(self):
 		#searches its memory for its current location (will have an A)
@@ -37,6 +56,8 @@ class Bot_2:
 	def get_children(self, node, viewed):
 		#return neighors of node
 		#if a given child has already been added to the queue, it is ignored
+		#note that this ignores whether a cell would be visible from the agent's location
+		#this means we have to deal with situations where a neighbor is some sort of void that can never be seen by the agent (e.g. space outside building)
 		children = []
 
 		#top row
@@ -85,7 +106,7 @@ class Bot_2:
 
 		return children
 
-	def sweep_complete(self):
+	def check_for_unseen(self):
 		#do a bfs starting at agent pos, stop when either have looked at everything or found unexplored space
 
 		#do the bfs
@@ -96,6 +117,10 @@ class Bot_2:
 			current = nodeQueue.pop(0)
 
 			if self.working_memory[current[0]][current[1]] == None:
+				if self.reference_memory[current[0]][current[1]] == "+":
+					#the current cell is a void space in the original and should be ignored
+					#add it to working memory so it's copied over later
+					self.working_memory[current[0]][current[1]] = "+"
 				return current
 
 			else:
@@ -110,6 +135,52 @@ class Bot_2:
 		#if we reach this, the while loop completed without finding anything
 		return (-1, -1)
 
+	def heuristic(self, first, second):
+		#heuristic based on manhattan distance
+		(x1, y1) = first
+		(x2, y2) = second
+		return abs(x1 - x2) + abs(y1 - y2)
+
+	def a_star(self, start, destination):
+		#start and destination are coordinates
+		frontier = []
+		heappush(frontier, (0, start))	#add start to frontier
+		#dictionary containing best ancestor to a given node
+		parent = {}
+		parent[start] = None
+		#cost of start to a given node
+		g_score = {}
+		g_score[start] = 0
+
+		while not len(frontier) == 0:
+			#pop lowest priority point from queue, and seperate it from its priority
+			current = heappop(frontier)[1]
+
+			if current == destination:
+				break
+
+			for neighbor in self.get_neighbors(current):
+				neighbor_cost = g_score[current] + self.cost(current, neighbor)
+				if neighbor not in g_score or neighbor_cost < g_score[neighbor]:
+					g_score[neighbor] = neighbor_cost
+					heappush(frontier, (neighbor_cost + self.heuristic(destination, current), neighbor))
+					parent[neighbor] = current
+		if current != destination:
+			path = "FAIL"
+		return parent
+
+	def create_path(self, parent, destination):
+		path = []
+		path.append(node)
+		while node in parent:
+			node = parent[node]
+			if node != None:
+				path.append(node)
+		#before returning, we need to reverse the list so that it's a path from start to goal
+		path = list(reversed(path))
+		return path
+
+
 	def get_next_action(self):
 		#decide what to do next
 		#flow should work like this in a loop:
@@ -118,8 +189,40 @@ class Bot_2:
 			#3. pick next thing to look at
 			#4. get to that space
 			#5. go to 1 unless finished sensing
-		if (self.xpos, self.ypos) == self.currentDestination:
-			self.nextAction = "s"
+
+		if self.next_action == "s" or self.destination == (self.xpos, self.ypos):
+			#need to tell world that want to sense
+			#need to set next action to be check unseen
+			toReturn = "s"		#tells world to sense stuff
+			self.next_action = "c"
+			self.previous_action = "s"
+			return toReturn
+
+		elif self.next_action == "c":
+			#see if anything is left unseen
+			tmpDestination = self.check_for_unseen()
+			if tmpDestination == (-1, -1):
+				#sweep complete. ask world to verify and reset
+				self.next_action = "n"
+				return "n"
+
+			else:
+				#set destination
+				self.destination = tmpDestination
+				#calculate path to destination
+				parent = self.a_star((self.xpos, self.ypos), self.destination)
+				self.currentPath = self.create_path(parent, self.destination)
+				self.previous_action = "c"
+				self.next_action = "m"
+
+		elif self.next_action == "m":
+			#still need to move
+			#the world class will determine where we want to go next by taking the first node of the path directly
+			#if the move is not valid, the world will set the agent's next action to "s"
+			self.previous_action = "m"
+			return "m"
+
+
 
 	def sense(self):
 		self.world.get_sensor_data()
