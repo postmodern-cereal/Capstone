@@ -104,17 +104,20 @@ class World_2:
 			#in this orientation, left ray is left of screen, right ray is right of screen
 			#right ray found by starting at agent then moving upward with a slope of 1
 			while (rightx >= 0) and (righty < self.cols):
-				if grid[rightx][righty] == "#":
+				if self.is_obstacle((rightx, righty)):
 					break
-				rightx -= 1
-				righty += 1
+
+				else:
+					rightx -= 1
+					righty += 1
 
 			while (leftx >= 0) and (lefty >= 0):
 				if grid[leftx][lefty] == "#":
 					break
 
-				leftx -= 1
-				lefty -= 1
+				else:
+					leftx -= 1
+					lefty -= 1
 
 		elif self.get_agentdir() == "d":
 			#agent facing down, so get the proper endpoints
@@ -122,16 +125,18 @@ class World_2:
 			#left ray to right of screen
 			#note that right is agent's right (left of screen) in this orientation
 			while (rightx < self.rows) and (righty >= 0):
-				if self.is_obstacle((rightx, righty)):
+				if self.is_obstacle((rightx, righty)) :
 					break
-				rightx += 1
-				righty -= 1
+				else:
+					rightx += 1
+					righty -= 1
 
 			while (leftx < self.rows) and (lefty < self.cols):
 				if self.is_obstacle((leftx, lefty)):
 					break
-				leftx += 1
-				lefty += 1
+				else:
+					leftx += 1
+					lefty += 1
 
 		elif self.get_agentdir() == "l":
 			#agent facing left of screen
@@ -140,14 +145,16 @@ class World_2:
 			while (rightx >= 0) and (righty >= 0):
 				if self.is_obstacle((rightx, righty)):
 					break
-				rightx -= 1
-				righty -= 1
+				else:
+					rightx -= 1
+					righty -= 1
 
 			while (leftx < self.rows) and (lefty >= 0):
 				if self.is_obstacle((leftx, lefty)):
 					break
-				leftx += 1
-				lefty -= 1
+				else:
+					leftx += 1
+					lefty -= 1
 
 		elif self.get_agentdir() == "r":
 			#agent facing right of screen
@@ -156,14 +163,16 @@ class World_2:
 			while (rightx < self.rows) and (righty < self.cols):
 				if self.is_obstacle((rightx, righty)):
 					break
-				rightx += 1
-				righty += 1
+				else:
+					rightx += 1
+					righty += 1
 
 			while (leftx >= 0) and (lefty < self.rows):
 				if self.is_obstacle((leftx, lefty)):
 					break
-				leftx -= 1
-				lefty += 1
+				else:
+					leftx -= 1
+					lefty += 1
 
 		else:
 			#in theory, this should never be reached, but it never hurts to be careful
@@ -179,7 +188,8 @@ class World_2:
 		#path index: how many nodes we are away from the agent
 		x = node[0]
 		y = node[1]
-		offset = pathIndex - pathLength         #how much to add/subtract to/from the cordinate
+		#have to subtract 1 from path length so it works when path same as path index: even in this case, we still need to add a node
+		offset = pathIndex - (pathLength-1)         #how much to add/subtract to/from the cordinate
 
 		if self.get_agentdir() == 'u':
 			#need to subtract from x coordinate
@@ -312,7 +322,7 @@ class World_2:
 	def package_data(self, cell):
 	    #takes an ordered pair and pakcages it for addition to sensor data list
 	    #will return a list of form ((x, y), fill), where fill is the fill char
-	    return ((cell[0], cell[1]), self.grid[cell[0]][cell[1]])
+	    return [(cell[0], cell[1]), self.grid[cell[0]][cell[1]]]
 
 
 	def sense_init(self):
@@ -321,11 +331,11 @@ class World_2:
 
 		#first, we have to find the outer edges of the agent's field of view
 		(leftEdge, rightEdge) = self.cast_boundary_rays()
-		print(leftEdge)
+		#print("Left Edge: ", leftEdge)
 		leftPath = list(bresenham(self.get_agentx(), self.get_agenty(), leftEdge[0], leftEdge[1]))
 		rightPath = list(bresenham(self.get_agentx(), self.get_agenty(), rightEdge[0], rightEdge[1]))
 
-		print(leftPath)
+		#print("Initial left path ", leftPath)
 
 		#now that the paths have been created, we must trace between cooresponding points on each line
 		#since the FOV is bounded by two lines with a slope of 1, we can guarantee that there will
@@ -342,6 +352,10 @@ class World_2:
 		right = (self.get_agentx(), self.get_agenty)
 		sensorData = []
 		while True:
+			#print()
+			#print("Current left path ", leftPath)
+			#print("Index: ", pathIndex)
+			#print("Length of left path:", len(leftPath))
 			#loop to manually stop when all characters on frontier are obstacles
 
 
@@ -349,17 +363,20 @@ class World_2:
 			#if one of the paths is out of nodes, use the last one in the path
 			#if both out of nodes, search is done from this angle
 			if len(leftPath) > pathIndex:
+				#print("Normal")
 				#have not reached end of left path
 				left = leftPath[pathIndex]
 
 			else:
-				if self.boundary_in_corner(left, "l"):
+				if self.boundary_in_corner(leftPath[-1], "l"):
+					#print("Corner")
 					#can keep scanning iff right not in corner
 
 					if len(rightPath) > pathIndex:
+						#print("Right good")
 						#first, move left path down to current row with adjust_coords
-						left = self.adjust_coords(left, len(leftPath), pathIndex)
-
+						left = self.adjust_coords(leftPath[-1], len(leftPath), pathIndex)
+						#print("Adjusted left: ", left)
 						#now check if left now inside a wall. If so, iterate forward until it's not
 						if self.is_obstacle(left):
 							#left bound is inside a wall. Move it to right until clear.
@@ -371,9 +388,14 @@ class World_2:
 
 							#iterate along path until hit clear space
 							for point in pathToRight:
-								if not self.is_obstacle(point):
+								if self.is_obstacle(point):
+									#print(point)
+									if not self.is_obstructed(point):
+										sensorData.append(self.package_data(point))
+								elif not self.is_obstacle(point):
 									left = point
 									break
+						leftPath.append(left)
 
 					#note: rightPath[-1] gets last element of rightPath
 					elif not self.boundary_in_corner(rightPath[-1], "r"):
@@ -382,6 +404,8 @@ class World_2:
 
 						#move left, right to current row
 						left = self.adjust_coords(left, len(leftPath), pathIndex)
+						#print("Adjusted left: ", left)
+						#print("Last part of right path: ", rightPath[-1])
 
 						#tmp is temp right bound
 						tmp = self.adjust_coords(rightPath[-1], len(rightPath), pathIndex)
@@ -390,10 +414,14 @@ class World_2:
 							pathToRight = list(bresenham(left[0], left[1], tmp[0], tmp[1]))
 
 							for point in pathToRight:
-								if not self.is_obstacle(point):
+								if self.is_obstacle(point) and not self.is_obstructed(point):
+									sensorData.append(self.package_data(point))
+
+								elif not self.is_obstacle(point):
 									left = point
 									break
 
+						leftPath.append(left)
 						#if self.is_obstacle(tmp):
 						#	pathToLeft = list(bresenham(right[0], right[1], left[0], left[1]))
 						#
@@ -408,12 +436,10 @@ class World_2:
 
 				else:
 					#extend left path: no corner reached
-					print("Lefts")
-					print(left)
-					print(len(leftPath))
-					print(pathIndex)
-					left = self.adjust_coords(left, len(leftPath), pathIndex)
-					print(left)
+					#print("Lefts ", leftPath)
+					left = self.adjust_coords(leftPath[-1], len(leftPath), pathIndex)
+					#print("Adjusted left ", left)
+
 					if self.is_obstacle(left):
 						#move l bound out of wall
 						if len(rightPath) > pathIndex:
@@ -422,7 +448,10 @@ class World_2:
 							pathToRight = list(bresenham(left[0], left[1], tmp[0], tmp[1]))
 
 							for point in pathToRight:
-								if not self.is_obstacle(point):
+								if self.is_obstacle(point) and not self.is_obstructed(point):
+									sensorData.append(self.package_data(point))
+
+								elif not self.is_obstacle(point):
 									left = point
 									break
 						else:
@@ -433,10 +462,14 @@ class World_2:
 
 							pathToRight = list(bresenham(left[0], left[1], tmp[0], tmp[1]))
 							for point in pathToRight:
-								if not self.is_obstacle(point):
+								if self.is_obstacle(point) and not self.is_obstructed(point):
+									sensorData.append(self.package_data(point))
+
+								elif not self.is_obstacle(point):
 									left = point
 									break
 
+					leftPath.append(left)
 
 			if len(rightPath) > pathIndex:
 				#have not reached end of right path
@@ -446,15 +479,18 @@ class World_2:
 				#if self.boundary_in_corner(right, "r"):
 				#if statement not needed: you do the same things whether it's
 				#in a corner or not
-			    #need to fix right bound
-			    right = self.adjust_coords(rightPath[-1], len(rightPath), pathIndex)
-			    if self.is_obstacle(right):
+				#need to fix right bound
+				right = self.adjust_coords(rightPath[-1], len(rightPath), pathIndex)
+				if self.is_obstacle(right):
 					#moves to L because L already fixed
-			        pathToLeft = list(bresenham(right[0], right[1], left[0], left[1]))
-			        for point in pathToLeft:
-			            if not self.is_obstacle(point):
-			                right = point
-			                break
+					pathToLeft = list(bresenham(right[0], right[1], left[0], left[1]))
+					for point in pathToLeft:
+						if self.is_obstacle(point) and not self.is_obstructed(point):
+							sensorData.append(self.package_data(point))
+						elif not self.is_obstacle(point):
+							right = point
+							break
+				rightPath.append(right)
 
 			#increment loop variable now, because it won't be needed for rest
 			#of loop
@@ -588,12 +624,18 @@ print("Agent location:", world.agentx, ", ", world.agenty)
 print("Actual world")
 world.display_world()
 world.set_agentdir("d")
-print(world.get_agentdir())
 agentMap = world.grid
 visible = world.sense_init()
 
-#combine everything
-for point in visible:
-    agentMap[point[0]][point[1]] = "-"
+for item in visible:
+	item = item.pop()
 
-print(agentMap)
+print("Tiles visible to agent:")
+for i in range (0, world.rows):
+	for j in range (0, world.cols):
+		if [(i, j)] in visible:
+			print("-", end="")
+		else:
+			print(agentMap[i][j], end="")
+	print()
+#print(agentMap)
