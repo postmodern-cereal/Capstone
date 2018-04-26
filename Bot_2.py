@@ -1,4 +1,5 @@
 import numpy as np
+from heapq import *
 class Bot_2:
 
 
@@ -27,6 +28,15 @@ class Bot_2:
 
 	def set_ypos(self, y):
 		self.ypos = y
+
+	def display_memory(self):
+		for x in range (0, self.rows):
+			for y in range (0, self.cols):
+				if self.working_memory[x][y] == None:
+					print("~", end='')
+				else:
+					print(self.working_memory[x][y], end='')
+			print()
 
 	def reset(self):
 		#resets agent for another sweep
@@ -135,11 +145,74 @@ class Bot_2:
 		#if we reach this, the while loop completed without finding anything
 		return (-1, -1)
 
+	def cost(self, start, end):
+		#get cost of going from start to end
+		#cost is manhattan distance
+		return (abs(start[0] - end[0]) + abs(start[1] - end[1]))
+
 	def heuristic(self, first, second):
 		#heuristic based on manhattan distance
 		(x1, y1) = first
 		(x2, y2) = second
 		return abs(x1 - x2) + abs(y1 - y2)
+
+	def is_available(self, cell):
+        #returns true iff cell does not contain obstacle or unreachable space
+		return (not self.reference_memory[cell[0]][cell[1]] == "#") and (not self.reference_memory[cell[0]][cell[1]] == "+")
+
+	def get_neighbors(self, current):
+        #a separate method just for A* that ignores spaces outside the building
+		x = current[0]
+		y = current[1]
+		neighbors = []  #holds neighboring nodes
+        #top row
+		if x > 0:
+			#add top middle child
+			if self.is_available((x-1, y)):
+				#top middle is neither wall or void
+				neighbors.append((x-1, y))
+
+			if y > 0:
+				#top left exists
+				if self.is_available((x-1, y-1)):
+				    #top left available
+				    neighbors.append((x-1, y-1))
+
+			if y+1 < self.cols:
+				#top right exists
+				if self.is_available((x-1, y+1)):
+				    neighbors.append((x-1, y+1))
+
+		#right middle
+		if y+1 < self.cols:
+			#add right middle child
+			if self.is_available((x, y+1)):
+			    neighbors.append((x, y+1))
+
+		#left middle
+		if y > 0:
+			#add left middle child
+			if self.is_available((x, y-1)):
+			    neighbors.append((x, y-1))
+
+		#bottom row
+		if x+1 < self.rows:
+			#add bottom middle
+			if self.is_available((x+1, y)):
+			    neighbors.append((x+1, y))
+
+			if y > 0:
+				#add bottom left child
+				if self.is_available((x+1, y-1)):
+				    neighbors.append((x+1, y-1))
+
+			if y+1 < self.cols:
+				#add bottom right child
+				if self.is_available((x+1, y+1)):
+				    neighbors.append((x+1, y+1))
+				    
+		return neighbors
+        
 
 	def a_star(self, start, destination):
 		#start and destination are coordinates
@@ -169,7 +242,7 @@ class Bot_2:
 			path = "FAIL"
 		return parent
 
-	def create_path(self, parent, destination):
+	def create_path(self, parent, node):
 		path = []
 		path.append(node)
 		while node in parent:
@@ -194,8 +267,8 @@ class Bot_2:
 			#need to tell world that want to sense
 			#need to set next action to be check unseen
 			toReturn = "s"		#tells world to sense stuff
-			self.next_action = "c"
-			self.previous_action = "s"
+			self.next_action = "c"  #next action: check for unseen
+			self.previous_action = "s"  #just finished sensing
 			return toReturn
 
 		elif self.next_action == "c":
@@ -212,8 +285,9 @@ class Bot_2:
 				#calculate path to destination
 				parent = self.a_star((self.xpos, self.ypos), self.destination)
 				self.currentPath = self.create_path(parent, self.destination)
-				self.previous_action = "c"
-				self.next_action = "m"
+				self.previous_action = "c"  #just did a check
+				self.next_action = "m"      #need to move next
+				return "m"
 
 		elif self.next_action == "m":
 			#still need to move
@@ -222,10 +296,6 @@ class Bot_2:
 			self.previous_action = "m"
 			return "m"
 
-
-
-	def sense(self):
-		self.world.get_sensor_data()
 
 	def add_data(self, data):
 		#data comes in as list of lists
@@ -238,4 +308,6 @@ class Bot_2:
 			else:
 				content = "_"
 
-			self.grid[x][y] = content
+			self.working_memory[x][y] = content
+			
+			

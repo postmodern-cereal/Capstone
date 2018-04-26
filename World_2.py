@@ -1,5 +1,6 @@
 import numpy as np
 from heapq import *
+from math import *
 import random
 from Bot_2 import Bot_2
 from bresenham  import bresenham
@@ -34,13 +35,16 @@ class World_2:
 		return self.agentdir
 
 	def rotate(self):
-		#rotates agent clockwise. this is arbitrary and doesn't effect anythign in a major way
+		#rotates agent clockwise. this is arbitrary and doesn't effect anything in a major way
 		if self.agentdir == "u":
 			self.set_agentdir("r")
+			
 		elif self.agentdir == "r":
 			self.set_agentdir("d")
+			
 		elif self.agentdir == "d":
 			self.set_agentdir("l")
+			
 		else:
 			self.set_agentdir("u")
 
@@ -49,7 +53,9 @@ class World_2:
 
 	def is_obstacle(self, node):
 		#returns true iff there is an obstacle at (x, y)
-		return (self.grid[node[0]][node[1]] == "#")
+		x = node[0]
+		y = node[1]
+		return (self.grid[x][y] == "#")
 
 	def get_distance(self, start, end):
 		#return distance between start and end
@@ -123,7 +129,7 @@ class World_2:
 					righty += 1
 
 			while (leftx >= 0) and (lefty >= 0):
-				if grid[leftx][lefty] == "#":
+				if self.grid[leftx][lefty] == "#":
 					break
 
 				else:
@@ -223,6 +229,7 @@ class World_2:
 			return (x, y)
 
 	def extend_ray(self, start, end):
+		
 		#used to trace helper arrays to their endpoints
 		#calculate slope from endpoints
 
@@ -232,8 +239,9 @@ class World_2:
 		nexty = end[1]
 		while (nextx >= 0) and (nextx < self.cols) and (nexty >= 0) and (nexty < self.rows):
 			#calculate next x, y
-			nexty += slope
-			nextx = start[0] + ((nexty - start[1])/slope)
+			nextx += 1
+			nexty = nextx + slope
+			nexty = int(round(nexty, 0))
 
 			#ensure (nextx, nexty) in bounds
 			if (nextx < 0) or (nextx >= self.rows) or (nexty < 0) or (nexty >= self.cols):
@@ -245,8 +253,11 @@ class World_2:
 			path.append((nextx, nexty))
 
 			#determine whether to stop extending ray
-			if self.is_obstacle(nextx, nexty):
+			node = (nextx, nexty)
+
+			if self.grid[int(nextx)][int(nexty)] == "#":
 				break
+
 
 		return path
 
@@ -294,7 +305,7 @@ class World_2:
 
 	def helper_ray(self, corner):
 		#corner is ordered pair coordinates of corner through which ray passes
-		return self.extend_ray((agentx, agenty), corner)
+		return self.extend_ray((self.agentx, self.agenty), corner)
 
 	def farther_from_agent(self, current, previous):
 		#returns true iff current farther from agent than previous
@@ -345,6 +356,15 @@ class World_2:
 		#print("Left Edge: ", leftEdge)
 		leftPath = list(bresenham(self.get_agentx(), self.get_agenty(), leftEdge[0], leftEdge[1]))
 		rightPath = list(bresenham(self.get_agentx(), self.get_agenty(), rightEdge[0], rightEdge[1]))
+
+		print("Boundary Rays: ")
+		for i in range (0, self.rows):
+			for j in range(0, self.cols):
+				if (i,j) in leftPath or (i, j) in rightPath:
+					print(".", end='')
+				else:
+					print(self.grid[i][j], end='')
+			print()
 
 		#print("Initial left path ", leftPath)
 
@@ -550,10 +570,21 @@ class World_2:
 						continue
 
 					previous = (right[0], y - 1)
-
+					#print("Current: ", current, "Previous: ", previous)
 					if self.needs_ray(current, previous):
 						#paths have to be passed somewhat counterintuitively
 						#since the helper ray is on the agent's left, it gets passed first
+						helper = self.helper_ray(current)
+						print("Generating a helper ray")
+						for i in range (0, self.rows):
+							for j in range (0, self.cols):
+								if (i, j) in helper:
+									print(".", end='')
+								elif (i,j) in sensorData:
+									print("_",end='')
+								else:
+									print(self.grid[i][j], end='')
+							print()
 						sensorData.extend(self.sense(self.helper_ray(current), rightPath[pathIndex:]))
 
 						#set right path to end at current node
@@ -570,6 +601,7 @@ class World_2:
 				#must move from l ray to r ray
 				for x in range(left[0], right[0]+1):
 					current = (x, left[1])
+					
 
 					if x == left[0]:
 						if not self.is_obstructed(current):
@@ -579,6 +611,9 @@ class World_2:
 					previous = (x-1, left[1])
 
 					if self.needs_ray(current, previous):
+						if current[0] == right[0]:
+							continue
+						print("Left Path: ", leftPath)
 						sensorData.extend(self.sense(leftPath[pathIndex:], self.helper_ray(current)))
 
 						#adjust left path
@@ -620,29 +655,75 @@ class World_2:
 
 		return sensorData
 
+	def move_valid(self, current, destination):
+		#returns true iff move from current to destination legal
+		#move legal iff:
+			#distance from current to destination is 1
+            #move does not end in obstacle or outside map
+		if self.get_distance(current, destination) == 1 and not self.is_obstacle(destination) and not self.grid[destination[0]][destination[1]] == "+":
+			return True
+		else:
+			return False
+
+	def verify_sweep(self):
+		#check that agent has actually finsihed a sweep:
+		#data for bot versions of agent mem should be same
+		#note that void spaces (those that cannot be reached by the agent) will appear as "+"
+		for x in range (0, self.rows):
+			for y in range (0, self.cols):
+				if not (self.agent.working_memory[x][y] == self.agent.reference_memory[x][y]):
+					#found a spot where agent has not swept
+					return False
+        
+		return True
+
 	def simulate(self, numSweeps):
 		#basic main loop method that runs the simulations
 		#numSweeps is how many total sweeps of building agent should make
 		while numSweeps > 0:
+			print("World:")
+			self.display_world()
+			print("Agent working memory")
+			self.agent.display_memory()
+			print("Agent direction: ", self.get_agentdir())
+			print()
 			nextAction = self.agent.get_next_action()
-			if next_action == "s":
-				for i in range (0, 3):
+			print("Next action: ", nextAction)
+			if nextAction == "s":
+			    #sense in all 4 directions
+				for i in range (0, 4):
+					print("SENSING")
+					print("Agent direction: ", self.get_agentdir())
 					self.agent.add_data(self.sense_init())
 					self.rotate()
-			elif next_action == "n":
+					print("Agent working memory:")
+					self.agent.display_memory()
+				
+					
+			elif nextAction == "n":
 				#verify complete
-				self.agent.reset()
-			elif next_action == "m":
+				if self.verify_sweep() == True:
+				    self.agent.reset()
+				    numSweeps -= 1
+				
+				else:
+				    #the agent messed up. have it check again
+				    self.agent.next_action = "c"
+				    #agent will run check on next loop through
+				    
+			elif nextAction == "m":
 				#get next move
+				nextMove = self.agent.currentPath.pop(0)
 				#check next move valid
-				#make next move if valid
-				#if next move invalid:
-					#add time consumed by the following
-					#clear path
-					#clear destination
-					#set agent next move to sense
-					#end timer
-
+				if self.move_valid((self.agentx, self.agenty), nextMove):
+				    self.set_agentx(nextMove[0])
+				    self.set_agenty(nextMove[1])
+				else:
+				    #move invalid: tell agent to sense
+				    self.agent.currentPath = []
+				    self.agent.next_action = "s"
+				    #agent will gain sensor data on next loop and try again
+			
 #need to test world functionality
 
 
@@ -650,23 +731,3 @@ class World_2:
 
 
 
-world = World_2(11, 22)
-print("Agent location:", world.agentx, ", ", world.agenty)
-print("Actual world")
-world.display_world()
-world.set_agentdir("d")
-agentMap = world.grid
-visible = world.sense_init()
-
-for item in visible:
-	item = item.pop()
-
-print("Tiles visible to agent:")
-for i in range (0, world.rows):
-	for j in range (0, world.cols):
-		if [(i, j)] in visible:
-			print("-", end="")
-		else:
-			print(agentMap[i][j], end="")
-	print()
-#print(agentMap)
