@@ -1,3 +1,4 @@
+import time
 import numpy as np
 from heapq import *
 from math import *
@@ -38,13 +39,13 @@ class World_2:
 		#rotates agent clockwise. this is arbitrary and doesn't effect anything in a major way
 		if self.agentdir == "u":
 			self.set_agentdir("r")
-			
+
 		elif self.agentdir == "r":
 			self.set_agentdir("d")
-			
+
 		elif self.agentdir == "d":
 			self.set_agentdir("l")
-			
+
 		else:
 			self.set_agentdir("u")
 
@@ -96,7 +97,7 @@ class World_2:
 			print()
 
 	def is_obstructed(self, node):
-        #node is the spot you are trying to see
+        #node is the spot yok2u are trying to see
         #step 1: make a straight line from agent to node
         #this is done using bresenham's straight line approximation algorithm
         #if any of the coordinates returned contain an obstacle, we return false. If not, we return true
@@ -229,7 +230,7 @@ class World_2:
 			return (x, y)
 
 	def extend_ray(self, start, end):
-		
+
 		#used to trace helper arrays to their endpoints
 		#calculate slope from endpoints
 
@@ -261,6 +262,7 @@ class World_2:
 
 		return path
 
+
 	def boundary_in_corner(self, node, side):
 		#node: current node in path
 		#side: "l" or "r"
@@ -268,7 +270,12 @@ class World_2:
 
 		#can lump some cases together due to symetry
 		if (self.get_agentdir() == "r" and side == "l") or (self.get_agentdir() == "u" and side == "r"):
-
+			#left ray, facing right, or right ray, facing up
+			#top right corner
+			if node[0] == 0:
+				if node[1] >= self.cols:
+					return True
+				return False
 			if self.is_obstacle((node[0], node[1] + 1)) and self.is_obstacle((node[0] - 1, node[1])) and self.is_obstacle((node[0] - 1, node[1] + 1)):
 				return True
 
@@ -276,7 +283,12 @@ class World_2:
 				return False
 
 		elif (self.get_agentdir() == "r" and side == "r") or (self.get_agentdir() == "d" and side == "l"):
-
+			#right ray facing right or left ray facing down
+			#bottom right corner
+			if node[0] == self.rows:
+				if node[1] >= self.cols:
+					return True
+				return False
 			if self.is_obstacle((node[0], node[1] + 1)) and self.is_obstructed((node[0] + 1, node[1] + 1)) and self.is_obstructed((node[0] + 1, node[1])):
 				return True
 
@@ -284,7 +296,12 @@ class World_2:
 				return False
 
 		elif (self.get_agentdir() == "l" and side == "l") or (self.get_agentdir() == "d" and side == "r"):
-
+			#left ray facing left or right ray facing down
+			#bottom left corner
+			if node[0] == self.rows:
+				if node[1] <= 0:
+					return True
+				return False
 			if self.is_obstacle((node[0], node[1] - 1)) and self.is_obstructed((node[0] + 1, node[1])) and self.is_obstructed((node[0] + 1, node[1] - 1)):
 				return True
 
@@ -292,7 +309,12 @@ class World_2:
 				return False
 
 		elif (self.get_agentdir() == "l" and side == "r") or (self.get_agentdir() == "u" and side == "l"):
-
+			#right ray facing left or left ray facing up
+			#top right corner
+			if node[0] == 0:
+				if node[1] <= 0:
+					return True
+				return False
 			if self.is_obstacle((node[0], node[1] - 1)) and self.is_obstructed((node[0] - 1, node[1] - 1)) and self.is_obstructed((node[0] - 1, node[1])):
 				return True
 
@@ -316,36 +338,36 @@ class World_2:
 		return (self.get_distance(current, bas)) > (self.get_distance(previous, bas))
 
 	def needs_ray(self, current, previous):
+		return False	#turns out i don't need this
 		#it is assumed that this will not be called on the first cell in a row
 		#takes current and previous spaces and determines if a helper ray is needed
 		#returns False if no action needed
 		#returns True if need helper ray
-		if self.is_obstacle(current):
-			if self.is_obstacle(previous):
-				return False
-			else:
-				#if current same distance to agent or closer, no obstruction occurs
-				if self.farther_from_agent(current, previous):
-					#blockage happens
-					return True
-				else:
-					#no blockage
-					return False
-
-		elif not self.is_obstacle(current):
-			if not self.is_obstacle(previous):
-				return False
-			else:
-				if self.farther_from_agent(current, previous):
-					return True
-				else:
-					return False
+		# if self.is_obstacle(current):
+		# 	if self.is_obstacle(previous):
+		# 		return False
+		# 	else:
+		# 		#if current same distance to agent or closer, no obstruction occurs
+		# 		if self.farther_from_agent(current, previous):
+		# 			#blockage happens
+		# 			return True
+		# 		else:
+		# 			#no blockage
+		# 			return False
+		#
+		# elif not self.is_obstacle(current):
+		# 	if not self.is_obstacle(previous):
+		# 		return False
+		# 	else:
+		# 		if self.farther_from_agent(current, previous):
+		# 			return True
+		# 		else:
+		# 			return False
 
 	def package_data(self, cell):
 	    #takes an ordered pair and pakcages it for addition to sensor data list
 	    #will return a list of form ((x, y), fill), where fill is the fill char
 	    return [(cell[0], cell[1]), self.grid[cell[0]][cell[1]]]
-
 
 	def sense_init(self):
 		#a main/control method used to call all necessary subroutines
@@ -383,11 +405,12 @@ class World_2:
 		right = (self.get_agentx(), self.get_agenty)
 		sensorData = []
 		while True:
-			#print()
-			#print("Current left path ", leftPath)
-			#print("Index: ", pathIndex)
-			#print("Length of left path:", len(leftPath))
-			#loop to manually stop when all characters on frontier are obstacles
+			#the loop will end under two circumstances:
+			#	1. Both the left and right paths are in a corner
+			#	2. All of the characters seen on the current lefel have been obstacles
+			#	To clarify, if the left is at (5, 5) and the right is at (5, 10), and every character between those two points is a wall, the sweep is over
+
+
 
 
 			#pop x and y coords from left and right paths
@@ -404,7 +427,8 @@ class World_2:
 					#can keep scanning iff right not in corner
 
 					if len(rightPath) > pathIndex:
-						#print("Right good")
+						#in this case, the right path still has nodes left in it
+						#this means that we can recalibrate the left bound so that we can continue to scan the visible area, but without scanning spaces that should not be scannable
 						#first, move left path down to current row with adjust_coords
 						left = self.adjust_coords(leftPath[-1], len(leftPath), pathIndex)
 						#print("Adjusted left: ", left)
@@ -470,35 +494,36 @@ class World_2:
 					#print("Lefts ", leftPath)
 					left = self.adjust_coords(leftPath[-1], len(leftPath), pathIndex)
 					#print("Adjusted left ", left)
-
-					if self.is_obstacle(left):
-						#move l bound out of wall
-						if len(rightPath) > pathIndex:
-							tmp = rightPath[pathIndex]
-
-							pathToRight = list(bresenham(left[0], left[1], tmp[0], tmp[1]))
-
-							for point in pathToRight:
-								if self.is_obstacle(point) and not self.is_obstructed(point):
-									sensorData.append(self.package_data(point))
-
-								elif not self.is_obstacle(point):
-									left = point
-									break
-						else:
-							#need to temporarily adjust r path in order to fix l
-							#will not matter if right in corner, because you can
-							#still move in the correct direction
-							tmp = self.adjust_coords(rightPath[-1], len(rightPath), pathIndex)
-
-							pathToRight = list(bresenham(left[0], left[1], tmp[0], tmp[1]))
-							for point in pathToRight:
-								if self.is_obstacle(point) and not self.is_obstructed(point):
-									sensorData.append(self.package_data(point))
-
-								elif not self.is_obstacle(point):
-									left = point
-									break
+					#
+					# if self.is_obstacle(left):
+					# 	#move l bound out of wall
+					# 	if len(rightPath) > pathIndex:
+					#
+					# 		tmp = rightPath[pathIndex]
+					# 		print("Right: ", tmp, "Left: ", left)
+					# 		pathToRight = list(bresenham(left[0], left[1], tmp[0], tmp[1]))
+					#
+					# 		for point in pathToRight:
+					# 			if self.is_obstacle(point) and not self.is_obstructed(point):
+					# 				sensorData.append(self.package_data(point))
+					#
+					# 			elif not self.is_obstacle(point):
+					# 				left = point
+					# 				break
+					# 	else:
+					# 		#need to temporarily adjust r path in order to fix l
+					# 		#will not matter if right in corner, because you can
+					# 		#still move in the correct direction
+					# 		tmp = self.adjust_coords(rightPath[-1], len(rightPath), pathIndex)
+					#
+					# 		pathToRight = list(bresenham(left[0], left[1], tmp[0], tmp[1]))
+					# 		for point in pathToRight:
+					# 			if self.is_obstacle(point) and not self.is_obstructed(point):
+					# 				sensorData.append(self.package_data(point))
+					#
+					# 			elif not self.is_obstacle(point):
+					# 				left = point
+					# 				break
 
 					leftPath.append(left)
 
@@ -507,21 +532,28 @@ class World_2:
 				right = rightPath[pathIndex]
 
 			else:
-				#if self.boundary_in_corner(right, "r"):
 				#if statement not needed: you do the same things whether it's
 				#in a corner or not
 				#need to fix right bound
 				right = self.adjust_coords(rightPath[-1], len(rightPath), pathIndex)
-				if self.is_obstacle(right):
-					#moves to L because L already fixed
-					pathToLeft = list(bresenham(right[0], right[1], left[0], left[1]))
-					for point in pathToLeft:
-						if self.is_obstacle(point) and not self.is_obstructed(point):
-							sensorData.append(self.package_data(point))
-						elif not self.is_obstacle(point):
-							right = point
-							break
+				# if self.is_obstacle(right):
+				# 	#moves to L because L already fixed
+				# 	pathToLeft = list(bresenham(right[0], right[1], left[0], left[1]))
+				# 	for point in pathToLeft:
+				# 		if self.is_obstacle(point) and not self.is_obstructed(point):
+				# 			sensorData.append(self.package_data(point))
+				# 		elif not self.is_obstacle(point):
+				# 			right = point
+				# 			break
 				rightPath.append(right)
+
+			swatchLength = 1+self.get_distance(left, right)	#stores the number of characters between right and left sides
+			#must add 1 to distance because will always come up one short
+			#the distance formula always comes up with mathematically correct answers when tested, so this is likely due to it somehow not accounting for the length of a character somewhere
+			#print("Swatch length: ", swatchLength)
+			numObstaclesInSwatch = 0	#stores how many obstacles have been hit in the current swatch
+			#will also be incremented if a given cell is obstructed
+			#this way, if it somehow goes beyond the confines of a room, it will still stop before hitting the far edge of the map
 
 			#increment loop variable now, because it won't be needed for rest
 			#of loop
@@ -536,6 +568,10 @@ class World_2:
 					if y == left[1]:
 						#we're on starting edge, no corner check
 						#add current to sensor data, then skip rest of loop
+						if self.is_obstacle(current) or self.is_obstructed(current):
+							#add an obstacle
+							numObstaclesInSwatch += 1
+
 						if not self.is_obstructed(current):
 							sensorData.append(self.package_data(current))
 							continue
@@ -555,6 +591,10 @@ class World_2:
 					else:
 						#Add cell to memory, but make sure is visible first
 						#This will avoid adding spaces between walls, out of bounds, or otherwise only visible by cheating
+						if self.is_obstacle(current) or self.is_obstructed(current):
+							#add an obstacle to the count
+							numObstaclesInSwatch += 1
+
 						if not self.is_obstructed(current):
 							sensorData.append(self.package_data(current))
 
@@ -565,6 +605,10 @@ class World_2:
 					current = (right[0], y)
 
 					if y == right[1]:
+						if self.is_obstacle(current) or self.is_obstructed(current):
+							#add an obstacle to the count
+							numObstaclesInSwatch += 1
+
 						if not self.is_obstructed(current):
 							sensorData.append(self.package_data(current))
 						continue
@@ -593,6 +637,10 @@ class World_2:
 						#will be adjusted/extended at start of next iteration as needed
 
 					else:
+						if self.is_obstacle(current) or self.is_obstructed(current):
+							#add an obstacle to the count
+							numObstaclesInSwatch += 1
+
 						if not self.is_obstructed(current):
 							sensorData.append(self.package_data(current))
 
@@ -601,9 +649,13 @@ class World_2:
 				#must move from l ray to r ray
 				for x in range(left[0], right[0]+1):
 					current = (x, left[1])
-					
+
 
 					if x == left[0]:
+						if self.is_obstacle(current) or self.is_obstructed(current):
+							#add an obstacle to the count
+							numObstaclesInSwatch += 1
+
 						if not self.is_obstructed(current):
 							sensorData.append(self.package_data(current))
 						continue
@@ -621,6 +673,10 @@ class World_2:
 						leftPath.append(current)
 
 					else:
+						if self.is_obstacle(current) or self.is_obstructed(current):
+							#add an obstacle to the count
+							numObstaclesInSwatch += 1
+
 						if not self.is_obstructed(current):
 							sensorData.append(self.package_data(current))
 
@@ -631,6 +687,10 @@ class World_2:
 					current = (x, right[1])
 
 					if x == right[0]:
+						if self.is_obstacle(current) or self.is_obstructed(current):
+							#add an obstacle to the count
+							numObstaclesInSwatch += 1
+
 						if not self.is_obstructed(current):
 							sensorData.append(self.package_data(current))
 						continue
@@ -646,12 +706,23 @@ class World_2:
 						rightPath.append(current)
 
 					else:
+						if self.is_obstacle(current) or self.is_obstructed(current):
+							#add an obstacle to the count
+							numObstaclesInSwatch += 1
+
 						if not self.is_obstructed(current):
 							sensorData.append(self.package_data(current))
 
 			else:
 				#should REALLY never happen
 				print("Invalid direction")
+
+			#before proceeding with next run of loop, make sure that the paths are not going to fall on the maxima of the array
+			#that is, the corners of the array itself
+			if swatchLength == numObstaclesInSwatch:
+				#every character was an obstacle. nothing at deeper levels wil be visible to the agent, so stop the sweep
+				break
+
 
 		return sensorData
 
@@ -660,7 +731,7 @@ class World_2:
 		#move legal iff:
 			#distance from current to destination is 1
             #move does not end in obstacle or outside map
-		if self.get_distance(current, destination) == 1 and not self.is_obstacle(destination) and not self.grid[destination[0]][destination[1]] == "+":
+		if self.get_distance(current, destination) <= 1 and not self.is_obstacle(destination) and not self.grid[destination[0]][destination[1]] == "+":
 			return True
 		else:
 			return False
@@ -669,65 +740,76 @@ class World_2:
 		#check that agent has actually finsihed a sweep:
 		#data for bot versions of agent mem should be same
 		#note that void spaces (those that cannot be reached by the agent) will appear as "+"
+		self.agent.display_ref_memory()
 		for x in range (0, self.rows):
 			for y in range (0, self.cols):
 				if not (self.agent.working_memory[x][y] == self.agent.reference_memory[x][y]):
+					if self.agent.working_memory[x][y] == "_" and self.agent.reference_memory[x][y] == " ":
+						return True
 					#found a spot where agent has not swept
 					return False
-        
+
 		return True
 
 	def simulate(self, numSweeps):
 		#basic main loop method that runs the simulations
 		#numSweeps is how many total sweeps of building agent should make
+		print("World Map:")
+		self.display_world()
 		while numSweeps > 0:
-			print("World:")
-			self.display_world()
-			print("Agent working memory")
+			print()
+			print()
+			print("Agent current working memory:")
 			self.agent.display_memory()
 			print("Agent direction: ", self.get_agentdir())
-			print()
 			nextAction = self.agent.get_next_action()
 			print("Next action: ", nextAction)
+			print()
 			if nextAction == "s":
 			    #sense in all 4 directions
 				for i in range (0, 4):
-					print("SENSING")
-					print("Agent direction: ", self.get_agentdir())
+					print("Sensing in direction ", self.get_agentdir())
 					self.agent.add_data(self.sense_init())
 					self.rotate()
-					print("Agent working memory:")
+					print()
+					print("Agent working memory after sensor sweep:")
 					self.agent.display_memory()
-				
-					
+					print()
+
+
 			elif nextAction == "n":
 				#verify complete
+				print("Verifying sweep complete...")
 				if self.verify_sweep() == True:
-				    self.agent.reset()
-				    numSweeps -= 1
-				
+					print("Verification successful, resetting agent")
+					self.agent.reset()
+					numSweeps -= 1
+
 				else:
 				    #the agent messed up. have it check again
-				    self.agent.next_action = "c"
+					print("Verification failed. Forcing agent re-check...")
+					self.agent.next_action = "c"
 				    #agent will run check on next loop through
-				    
+
 			elif nextAction == "m":
 				#get next move
+
 				nextMove = self.agent.currentPath.pop(0)
+				print("Attempting a move from ", (self.agentx, self.agenty), "to ", nextMove)
 				#check next move valid
 				if self.move_valid((self.agentx, self.agenty), nextMove):
-				    self.set_agentx(nextMove[0])
-				    self.set_agenty(nextMove[1])
+					print("Move from ", (self.agentx, self.agenty), "to ", nextMove, "successful.")
+					self.grid[self.agentx][self.agenty] = " "
+					self.set_agentx(nextMove[0])
+					self.set_agenty(nextMove[1])
+					self.grid[self.agentx][self.agenty] = "A"
+					self.agent.set_position(nextMove)
 				else:
 				    #move invalid: tell agent to sense
-				    self.agent.currentPath = []
-				    self.agent.next_action = "s"
+					print("Move from ", (self.agentx, self.agenty), "to ", nextMove, "failed. Informing agent...")
+					self.agent.currentPath = []
+					self.agent.next_action = "s"
 				    #agent will gain sensor data on next loop and try again
-			
+			time.sleep(.2)
+
 #need to test world functionality
-
-
-
-
-
-

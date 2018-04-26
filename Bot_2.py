@@ -29,8 +29,33 @@ class Bot_2:
 	def set_ypos(self, y):
 		self.ypos = y
 
-	def display_memory(self):
+	def set_position(self, position):
+		self.working_memory[self.xpos][self.ypos] = "_"
+		self.set_xpos(position[0])
+		self.set_ypos(position[1])
+		self.working_memory[self.xpos][self.ypos] = "A"
+
+	def display_ref_memory(self):
+
 		for x in range (0, self.rows):
+			if(x < 10):
+				print(x, end="  ")
+			else:
+				print(x, end=" ")
+			for y in range (0, self.cols):
+				if self.reference_memory[x][y] == None:
+					print("~", end='')
+				else:
+					print(self.reference_memory[x][y], end='')
+			print()
+
+	def display_memory(self):
+
+		for x in range (0, self.rows):
+			if(x < 10):
+				print(x, end="  ")
+			else:
+				print(x, end=" ")
 			for y in range (0, self.cols):
 				if self.working_memory[x][y] == None:
 					print("~", end='')
@@ -125,12 +150,13 @@ class Bot_2:
 
 		while len(nodeQueue) > 0:
 			current = nodeQueue.pop(0)
-
+			#print("Current: ", current)
 			if self.working_memory[current[0]][current[1]] == None:
 				if self.reference_memory[current[0]][current[1]] == "+":
 					#the current cell is a void space in the original and should be ignored
 					#add it to working memory so it's copied over later
 					self.working_memory[current[0]][current[1]] = "+"
+					continue
 				return current
 
 			else:
@@ -145,10 +171,9 @@ class Bot_2:
 		#if we reach this, the while loop completed without finding anything
 		return (-1, -1)
 
-	def cost(self, start, end):
-		#get cost of going from start to end
-		#cost is manhattan distance
-		return (abs(start[0] - end[0]) + abs(start[1] - end[1]))
+	def cost(self, start, neighbor):
+		#get cost of going from current node to selected neighbor
+		return 1
 
 	def heuristic(self, first, second):
 		#heuristic based on manhattan distance
@@ -158,6 +183,8 @@ class Bot_2:
 
 	def is_available(self, cell):
         #returns true iff cell does not contain obstacle or unreachable space
+		if cell == self.destination:
+			return True
 		return (not self.reference_memory[cell[0]][cell[1]] == "#") and (not self.reference_memory[cell[0]][cell[1]] == "+")
 
 	def get_neighbors(self, current):
@@ -172,16 +199,16 @@ class Bot_2:
 				#top middle is neither wall or void
 				neighbors.append((x-1, y))
 
-			if y > 0:
-				#top left exists
-				if self.is_available((x-1, y-1)):
-				    #top left available
-				    neighbors.append((x-1, y-1))
-
-			if y+1 < self.cols:
-				#top right exists
-				if self.is_available((x-1, y+1)):
-				    neighbors.append((x-1, y+1))
+			# if y > 0:
+			# 	#top left exists
+			# 	if self.is_available((x-1, y-1)):
+			# 	    #top left available
+			# 	    neighbors.append((x-1, y-1))
+			#
+			# if y+1 < self.cols:
+			# 	#top right exists
+			# 	if self.is_available((x-1, y+1)):
+			# 	    neighbors.append((x-1, y+1))
 
 		#right middle
 		if y+1 < self.cols:
@@ -201,18 +228,18 @@ class Bot_2:
 			if self.is_available((x+1, y)):
 			    neighbors.append((x+1, y))
 
-			if y > 0:
-				#add bottom left child
-				if self.is_available((x+1, y-1)):
-				    neighbors.append((x+1, y-1))
+			# if y > 0:
+			# 	#add bottom left child
+			# 	if self.is_available((x+1, y-1)):
+			# 	    neighbors.append((x+1, y-1))
+			#
+			# if y+1 < self.cols:
+			# 	#add bottom right child
+			# 	if self.is_available((x+1, y+1)):
+			# 	    neighbors.append((x+1, y+1))
 
-			if y+1 < self.cols:
-				#add bottom right child
-				if self.is_available((x+1, y+1)):
-				    neighbors.append((x+1, y+1))
-				    
 		return neighbors
-        
+
 
 	def a_star(self, start, destination):
 		#start and destination are coordinates
@@ -273,6 +300,7 @@ class Bot_2:
 
 		elif self.next_action == "c":
 			#see if anything is left unseen
+			print("Checking for unseen...")
 			tmpDestination = self.check_for_unseen()
 			if tmpDestination == (-1, -1):
 				#sweep complete. ask world to verify and reset
@@ -281,10 +309,17 @@ class Bot_2:
 
 			else:
 				#set destination
+				print("Unseen node detected at ", tmpDestination, ". Plotting a path...")
 				self.destination = tmpDestination
 				#calculate path to destination
+
+
+
+
 				parent = self.a_star((self.xpos, self.ypos), self.destination)
+
 				self.currentPath = self.create_path(parent, self.destination)
+				print("Path found: ", self.currentPath)
 				self.previous_action = "c"  #just did a check
 				self.next_action = "m"      #need to move next
 				return "m"
@@ -294,6 +329,8 @@ class Bot_2:
 			#the world class will determine where we want to go next by taking the first node of the path directly
 			#if the move is not valid, the world will set the agent's next action to "s"
 			self.previous_action = "m"
+			if self.currentPath[0] == (self.xpos, self.ypos):
+				currentPath.pop(0)
 			return "m"
 
 
@@ -309,5 +346,3 @@ class Bot_2:
 				content = "_"
 
 			self.working_memory[x][y] = content
-			
-			
