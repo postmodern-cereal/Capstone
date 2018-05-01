@@ -290,7 +290,7 @@ class Bot_2:
 			#4. get to that space
 			#5. go to 1 unless finished sensing
 
-		if self.next_action == "s" or self.destination == (self.xpos, self.ypos):
+		if self.next_action == "s" or (self.destination == (self.xpos, self.ypos) and not self.next_action =="c"):
 			#need to tell world that want to sense
 			#need to set next action to be check unseen
 			toReturn = "s"		#tells world to sense stuff

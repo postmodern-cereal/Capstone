@@ -13,6 +13,10 @@ class World_2:
 		self.cols = cols
 		self.grid = np.empty((rows, cols), dtype = object)
 		(self.agentx, self.agenty) = self.fill_grid("Building.txt")
+		self.movesMade = 0
+		self.rotationsMade = 0
+		self.moveCost = 0.373
+		self.rotationCost = 0.25
 		#agent direction indicated by a single character and are relative to top of screen:
 			#u= up(toward top of screen), d = down(bottom of screen), l = left of screen, r = right of screen
 		self.agentdir = "u"
@@ -48,6 +52,8 @@ class World_2:
 
 		else:
 			self.set_agentdir("u")
+
+		self.rotationsMade += 1
 
 	def set_agentdir(self, dir):
 		self.agentdir = dir
@@ -267,6 +273,12 @@ class World_2:
 		#node: current node in path
 		#side: "l" or "r"
 		#return true iff node in corner
+
+		if node[0] == 0 or node[1] == 0 or node[1] == self.cols-1 or node[1] == self.rows-1:
+			if (node[0] == 0 and node[1] == 0) or (node[0] == self.rows-1 and node[1] == self.cols-1):
+				return True
+			else:
+				return False
 
 		#can lump some cases together due to symetry
 		if (self.get_agentdir() == "r" and side == "l") or (self.get_agentdir() == "u" and side == "r"):
@@ -732,6 +744,7 @@ class World_2:
 			#distance from current to destination is 1
             #move does not end in obstacle or outside map
 		if self.get_distance(current, destination) <= 1 and not self.is_obstacle(destination) and not self.grid[destination[0]][destination[1]] == "+":
+			self.movesMade += 1
 			return True
 		else:
 			return False
@@ -775,6 +788,7 @@ class World_2:
 					print("Agent working memory after sensor sweep:")
 					self.agent.display_memory()
 					print()
+					self.agent.next_action = "c"
 
 
 			elif nextAction == "n":
@@ -782,6 +796,10 @@ class World_2:
 				print("Verifying sweep complete...")
 				if self.verify_sweep() == True:
 					print("Verification successful, resetting agent")
+					print(self.movesMade, " moves and ", self.rotationsMade, " rotations made.")
+					print("Total cost of moves: ", self.movesMade*self.moveCost, " seconds.")
+					print("Total cost of rotations: ", self.rotationsMade*self.rotationCost, " seconds.")
+					print("Grand total time cost: ",self.rotationsMade*self.rotationCost + self.movesMade*self.moveCost, " seconds." )
 					self.agent.reset()
 					numSweeps -= 1
 
